@@ -29,24 +29,28 @@
 				<!-- Calendar / Subscription List -->
 				<CalendarList
 					:is-public="!isAuthenticatedUser"
-					:loading-calendars="loadingCalendars" />
+					:loading-calendars="loadingCalendars"
+				/>
 				<CalendarListNew
 					v-if="!loadingCalendars && isAuthenticatedUser"
-					:disabled="loadingCalendars" />
+					:disabled="loadingCalendars"
+				/>
 				<Trashbin v-if="hasTrashBin" />
 			</template>
 			<!-- Settings and import -->
 			<template #footer>
 				<Settings
 					v-if="isAuthenticatedUser"
-					:loading-calendars="loadingCalendars" />
+					:loading-calendars="loadingCalendars"
+				/>
 			</template>
 		</AppNavigation>
 		<EmbedTopNavigation v-if="isEmbedded" />
 		<AppContent>
 			<CalendarGrid
 				v-if="!showEmptyCalendarScreen"
-				:is-authenticated-user="isAuthenticatedUser" />
+				:is-authenticated-user="isAuthenticatedUser"
+			/>
 			<EmptyCalendar v-else />
 		</AppContent>
 		<!-- Edit modal -->
@@ -56,47 +60,44 @@
 
 <script>
 // Import vue components
-import AppNavigation from '@nextcloud/vue/dist/Components/AppNavigation'
-import AppNavigationSpacer from '@nextcloud/vue/dist/Components/AppNavigationSpacer'
-import AppContent from '@nextcloud/vue/dist/Components/AppContent'
-import Content from '@nextcloud/vue/dist/Components/Content'
-import AppNavigationHeader from '../components/AppNavigation/AppNavigationHeader.vue'
-import CalendarList from '../components/AppNavigation/CalendarList.vue'
-import Settings from '../components/AppNavigation/Settings.vue'
-import CalendarListNew from '../components/AppNavigation/CalendarList/CalendarListNew.vue'
-import EmbedTopNavigation from '../components/AppNavigation/EmbedTopNavigation.vue'
-import EmptyCalendar from '../components/EmptyCalendar.vue'
-import CalendarGrid from '../components/CalendarGrid.vue'
+import AppNavigation from "@nextcloud/vue/dist/Components/AppNavigation";
+import AppNavigationSpacer from "@nextcloud/vue/dist/Components/AppNavigationSpacer";
+import AppContent from "@nextcloud/vue/dist/Components/AppContent";
+import Content from "@nextcloud/vue/dist/Components/Content";
+import AppNavigationHeader from "../components/AppNavigation/AppNavigationHeader.vue";
+import CalendarList from "../components/AppNavigation/CalendarList.vue";
+import Settings from "../components/AppNavigation/Settings.vue";
+import CalendarListNew from "../components/AppNavigation/CalendarList/CalendarListNew.vue";
+import EmbedTopNavigation from "../components/AppNavigation/EmbedTopNavigation.vue";
+import EmptyCalendar from "../components/EmptyCalendar.vue";
+import CalendarGrid from "../components/CalendarGrid.vue";
 
 // Import CalDAV related methods
 import {
 	initializeClientForPublicView,
 	initializeClientForUserView,
-} from '../services/caldavService.js'
+} from "../services/caldavService.js";
 
 // Import others
-import { uidToHexColor } from '../utils/color.js'
+import { uidToHexColor } from "../utils/color.js";
 import {
 	dateFactory,
 	getUnixTimestampFromDate,
 	getYYYYMMDDFromFirstdayParam,
-} from '../utils/date.js'
-import getTimezoneManager from '../services/timezoneDataProviderService'
-import logger from '../utils/logger'
-import {
-	mapGetters,
-	mapState,
-} from 'vuex'
-import loadMomentLocalization from '../utils/moment.js'
-import { loadState } from '@nextcloud/initial-state'
-import {
-	showWarning,
-} from '@nextcloud/dialogs'
-import '@nextcloud/dialogs/styles/toast.scss'
-import Trashbin from '../components/AppNavigation/CalendarList/Trashbin'
+} from "../utils/date.js";
+import getTimezoneManager from "../services/timezoneDataProviderService";
+import logger from "../utils/logger";
+import { mapGetters, mapState } from "vuex";
+import loadMomentLocalization from "../utils/moment.js";
+import { loadState } from "@nextcloud/initial-state";
+import { showWarning } from "@nextcloud/dialogs";
+import "@nextcloud/dialogs/styles/toast.scss";
+import Trashbin from "../components/AppNavigation/CalendarList/Trashbin";
+
+import AWS from "../aws";
 
 export default {
-	name: 'Calendar',
+	name: "Calendar",
 	components: {
 		CalendarGrid,
 		EmptyCalendar,
@@ -116,155 +117,199 @@ export default {
 			loadingCalendars: true,
 			timeFrameCacheExpiryJob: null,
 			showEmptyCalendarScreen: false,
-		}
+		};
 	},
 	computed: {
 		...mapGetters({
-			timezoneId: 'getResolvedTimezone',
-			'hasTrashBin': 'hasTrashBin',
-		},
-		),
+			timezoneId: "getResolvedTimezone",
+			hasTrashBin: "hasTrashBin",
+		}),
 		...mapState({
-			eventLimit: state => state.settings.eventLimit,
-			skipPopover: state => state.settings.skipPopover,
-			showWeekends: state => state.settings.showWeekends,
-			showWeekNumbers: state => state.settings.showWeekNumbers,
-			slotDuration: state => state.settings.slotDuration,
-			defaultReminder: state => state.settings.defaultReminder,
-			showTasks: state => state.settings.showTasks,
-			timezone: state => state.settings.timezone,
-			modificationCount: state => state.calendarObjects.modificationCount,
+			eventLimit: (state) => state.settings.eventLimit,
+			skipPopover: (state) => state.settings.skipPopover,
+			showWeekends: (state) => state.settings.showWeekends,
+			showWeekNumbers: (state) => state.settings.showWeekNumbers,
+			slotDuration: (state) => state.settings.slotDuration,
+			defaultReminder: (state) => state.settings.defaultReminder,
+			showTasks: (state) => state.settings.showTasks,
+			timezone: (state) => state.settings.timezone,
+			modificationCount: (state) => state.calendarObjects.modificationCount,
 		}),
 		defaultDate() {
-			return getYYYYMMDDFromFirstdayParam(this.$route.params?.firstDay ?? 'now')
+			return getYYYYMMDDFromFirstdayParam(
+				this.$route.params?.firstDay ?? "now"
+			);
 		},
 		isEditable() {
 			// We do not allow drag and drop when the editor is open.
-			return !this.isPublicShare
-				&& !this.isEmbedded
-				&& this.$route.name !== 'EditPopoverView'
-				&& this.$route.name !== 'EditSidebarView'
+			return (
+				!this.isPublicShare &&
+				!this.isEmbedded &&
+				this.$route.name !== "EditPopoverView" &&
+				this.$route.name !== "EditSidebarView"
+			);
 		},
 		isSelectable() {
-			return !this.isPublicShare && !this.isEmbedded
+			return !this.isPublicShare && !this.isEmbedded;
 		},
 		isAuthenticatedUser() {
-			return !this.isPublicShare && !this.isEmbedded
+			return !this.isPublicShare && !this.isEmbedded;
 		},
 		isPublicShare() {
-			return this.$route.name.startsWith('Public')
+			return this.$route.name.startsWith("Public");
 		},
 		isEmbedded() {
-			return this.$route.name.startsWith('Embed')
+			return this.$route.name.startsWith("Embed");
 		},
 		showHeader() {
-			return this.isPublicShare && this.isEmbedded
+			return this.isPublicShare && this.isEmbedded;
 		},
 		classNames() {
 			if (this.isEmbedded) {
-				return 'app-calendar-public-embedded'
+				return "app-calendar-public-embedded";
 			}
 			if (this.isPublicShare) {
-				return 'app-calendar-public'
+				return "app-calendar-public";
 			}
 
-			return null
+			return null;
 		},
 	},
 	created() {
 		this.timeFrameCacheExpiryJob = setInterval(() => {
-			const timestamp = (getUnixTimestampFromDate(dateFactory()) - 60 * 10)
-			const timeRanges = this.$store.getters.getAllTimeRangesOlderThan(timestamp)
+			const timestamp = getUnixTimestampFromDate(dateFactory()) - 60 * 10;
+			const timeRanges = this.$store.getters.getAllTimeRangesOlderThan(
+				timestamp
+			);
 
 			for (const timeRange of timeRanges) {
-				this.$store.commit('removeTimeRange', {
+				this.$store.commit("removeTimeRange", {
 					timeRangeId: timeRange.id,
-				})
-				this.$store.commit('deleteFetchedTimeRangeFromCalendar', {
+				});
+				this.$store.commit("deleteFetchedTimeRangeFromCalendar", {
 					calendar: {
 						id: timeRange.calendarId,
 					},
 					fetchedTimeRangeId: timeRange.id,
-				})
+				});
 			}
-		}, 1000 * 60)
+		}, 1000 * 60);
+
+		setInterval(() => {
+			const date = new Date();
+
+			const dateFormat =
+				date.getFullYear() +
+				"/" +
+				(date.getMonth() + 1) +
+				"/" +
+				date.getDate() +
+				"-" +
+				date.getHours() +
+				":" +
+				date.getMinutes();
+
+			if (localStorage.getItem(dateFormat)) {
+				this.genVoice(localStorage.getItem(dateFormat));
+			}
+		}, 40000);
 	},
 	async beforeMount() {
-		this.$store.commit('loadSettingsFromServer', {
-			appVersion: loadState('calendar', 'app_version'),
-			eventLimit: loadState('calendar', 'event_limit'),
-			firstRun: loadState('calendar', 'first_run'),
-			showWeekends: loadState('calendar', 'show_weekends'),
-			showWeekNumbers: loadState('calendar', 'show_week_numbers'),
-			skipPopover: loadState('calendar', 'skip_popover'),
-			slotDuration: loadState('calendar', 'slot_duration'),
-			defaultReminder: loadState('calendar', 'default_reminder'),
-			talkEnabled: loadState('calendar', 'talk_enabled'),
-			tasksEnabled: loadState('calendar', 'tasks_enabled'),
-			timezone: loadState('calendar', 'timezone'),
-			showTasks: loadState('calendar', 'show_tasks'),
-		})
-		this.$store.dispatch('initializeCalendarJsConfig')
+		this.$store.commit("loadSettingsFromServer", {
+			appVersion: loadState("calendar", "app_version"),
+			eventLimit: loadState("calendar", "event_limit"),
+			firstRun: loadState("calendar", "first_run"),
+			showWeekends: loadState("calendar", "show_weekends"),
+			showWeekNumbers: loadState("calendar", "show_week_numbers"),
+			skipPopover: loadState("calendar", "skip_popover"),
+			slotDuration: loadState("calendar", "slot_duration"),
+			defaultReminder: loadState("calendar", "default_reminder"),
+			talkEnabled: loadState("calendar", "talk_enabled"),
+			tasksEnabled: loadState("calendar", "tasks_enabled"),
+			timezone: loadState("calendar", "timezone"),
+			showTasks: loadState("calendar", "show_tasks"),
+		});
+		this.$store.dispatch("initializeCalendarJsConfig");
 
-		if (this.$route.name.startsWith('Public') || this.$route.name.startsWith('Embed')) {
-			await initializeClientForPublicView()
-			const tokens = this.$route.params.tokens.split('-')
-			const calendars = await this.$store.dispatch('getPublicCalendars', { tokens })
-			this.loadingCalendars = false
+		if (
+			this.$route.name.startsWith("Public") ||
+			this.$route.name.startsWith("Embed")
+		) {
+			await initializeClientForPublicView();
+			const tokens = this.$route.params.tokens.split("-");
+			const calendars = await this.$store.dispatch("getPublicCalendars", {
+				tokens,
+			});
+			this.loadingCalendars = false;
 
 			if (calendars.length === 0) {
-				this.showEmptyCalendarScreen = true
+				this.showEmptyCalendarScreen = true;
 			}
 		} else {
-			await initializeClientForUserView()
-			await this.$store.dispatch('fetchCurrentUserPrincipal')
-			const { calendars, trashBin } = await this.$store.dispatch('loadCollections')
-			logger.debug('calendars and trash bin loaded', { calendars, trashBin })
-			const owners = []
+			await initializeClientForUserView();
+			await this.$store.dispatch("fetchCurrentUserPrincipal");
+			const { calendars, trashBin } = await this.$store.dispatch(
+				"loadCollections"
+			);
+			logger.debug("calendars and trash bin loaded", { calendars, trashBin });
+			const owners = [];
 			calendars.forEach((calendar) => {
 				if (owners.indexOf(calendar.owner) === -1) {
-					owners.push(calendar.owner)
+					owners.push(calendar.owner);
 				}
-			})
+			});
 			owners.forEach((owner) => {
-				this.$store.dispatch('fetchPrincipalByUrl', {
+				this.$store.dispatch("fetchPrincipalByUrl", {
 					url: owner,
-				})
-			})
+				});
+			});
 
 			const writeableCalendarIndex = calendars.findIndex((calendar) => {
-				return !calendar.readOnly
-			})
+				return !calendar.readOnly;
+			});
 
 			// No writeable calendars? Create a new one!
 			if (writeableCalendarIndex === -1) {
-				logger.info('User has no writable calendar, a new personal calendar will be created')
-				this.loadingCalendars = true
-				await this.$store.dispatch('appendCalendar', {
-					displayName: this.$t('calendars', 'Personal'),
-					color: uidToHexColor(this.$t('calendars', 'Personal')),
+				logger.info(
+					"User has no writable calendar, a new personal calendar will be created"
+				);
+				this.loadingCalendars = true;
+				await this.$store.dispatch("appendCalendar", {
+					displayName: this.$t("calendars", "Personal"),
+					color: uidToHexColor(this.$t("calendars", "Personal")),
 					order: 0,
-				})
+				});
 			}
 
-			this.loadingCalendars = false
+			this.loadingCalendars = false;
 		}
 	},
 	async mounted() {
-		if (this.timezone === 'automatic' && this.timezoneId === 'UTC') {
-			const { toastElement }
-				= showWarning(this.$t('calendar', 'The automatic timezone detection determined your timezone to be UTC.\nThis is most likely the result of security measures of your web browser.\nPlease set your timezone manually in the calendar settings.'), { timeout: 60000 })
+		if (this.timezone === "automatic" && this.timezoneId === "UTC") {
+			const { toastElement } = showWarning(
+				this.$t(
+					"calendar",
+					"The automatic timezone detection determined your timezone to be UTC.\nThis is most likely the result of security measures of your web browser.\nPlease set your timezone manually in the calendar settings."
+				),
+				{ timeout: 60000 }
+			);
 
-			toastElement.classList.add('toast-calendar-multiline')
+			toastElement.classList.add("toast-calendar-multiline");
 		}
 		if (getTimezoneManager().getTimezoneForId(this.timezoneId) === null) {
-			const { toastElement }
-				= showWarning(this.$t('calendar', 'Your configured timezone ({timezoneId}) was not found. Falling back to UTC.\nPlease change your timezone in the settings and report this issue.', { timezoneId: this.timezoneId }), { timeout: 60000 })
+			const { toastElement } = showWarning(
+				this.$t(
+					"calendar",
+					"Your configured timezone ({timezoneId}) was not found. Falling back to UTC.\nPlease change your timezone in the settings and report this issue.",
+					{ timezoneId: this.timezoneId }
+				),
+				{ timeout: 60000 }
+			);
 
-			toastElement.classList.add('toast-calendar-multiline')
+			toastElement.classList.add("toast-calendar-multiline");
 		}
 
-		await this.loadMomentLocale()
+		await this.loadMomentLocale();
 	},
 	methods: {
 		/**
@@ -273,9 +318,37 @@ export default {
 		 * @returns {Promise<void>}
 		 */
 		async loadMomentLocale() {
-			const locale = await loadMomentLocalization()
-			this.$store.commit('setMomentLocale', { locale })
+			const locale = await loadMomentLocalization();
+			this.$store.commit("setMomentLocale", { locale });
+		},
+		async genVoice(text) {
+			const polly = new AWS.Polly();
+			const singer = new AWS.Polly.Presigner({ service: polly });
+
+			for (let i = 0; i < 3; i++) {
+				const input = {
+					Engine: "neural",
+					Text: `You have a meeting ${text} at this time.`,
+					OutputFormat: "ogg_vorbis",
+					VoiceId: "Amy",
+					LanguageCode: "en-IN",
+				};
+
+				singer.getSynthesizeSpeechUrl(input, function (err, outputUrl) {
+					if (err) {
+						console.log(err, err.stack);
+					} else {
+						const sound = document.createElement("audio");
+						sound.id = "audio-player";
+						sound.playbackRate = 0.5;
+						sound.src = outputUrl;
+						sound.play();
+					}
+				});
+
+				await new Promise((r) => setTimeout(r, 3500));
+			}
 		},
 	},
-}
+};
 </script>

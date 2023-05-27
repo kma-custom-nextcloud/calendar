@@ -20,7 +20,7 @@
  *
  */
 
-import logger from './logger.js'
+import logger from "./logger.js";
 
 /**
  * returns a new Date object
@@ -28,7 +28,7 @@ import logger from './logger.js'
  * @returns {Date}
  */
 export function dateFactory() {
-	return new Date()
+	return new Date();
 }
 
 /**
@@ -38,9 +38,9 @@ export function dateFactory() {
  * @returns {string}
  */
 export function getYYYYMMDDFromDate(date) {
-	return new Date(date.getTime() - (date.getTimezoneOffset() * 60000))
+	return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
 		.toISOString()
-		.split('T')[0]
+		.split("T")[0];
 }
 
 /**
@@ -50,7 +50,7 @@ export function getYYYYMMDDFromDate(date) {
  * @returns {number}
  */
 export function getUnixTimestampFromDate(date) {
-	return Math.floor(date.getTime() / 1000)
+	return Math.floor(date.getTime() / 1000);
 }
 
 /**
@@ -60,23 +60,26 @@ export function getUnixTimestampFromDate(date) {
  * @returns {Date}
  */
 export function getDateFromFirstdayParam(firstDayParam) {
-	if (firstDayParam === 'now') {
-		return dateFactory()
+	if (firstDayParam === "now") {
+		return dateFactory();
 	}
 
-	const [year, month, date] = firstDayParam.split('-')
-		.map((str) => parseInt(str, 10))
+	const [year, month, date] = firstDayParam
+		.split("-")
+		.map((str) => parseInt(str, 10));
 
 	if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(date)) {
-		logger.error('First day parameter contains non-numerical components, falling back to today')
-		return dateFactory()
+		logger.error(
+			"First day parameter contains non-numerical components, falling back to today"
+		);
+		return dateFactory();
 	}
 
-	const dateObject = dateFactory()
-	dateObject.setFullYear(year, month - 1, date)
-	dateObject.setHours(0, 0, 0, 0)
+	const dateObject = dateFactory();
+	dateObject.setFullYear(year, month - 1, date);
+	dateObject.setHours(0, 0, 0, 0);
 
-	return dateObject
+	return dateObject;
 }
 
 /**
@@ -86,11 +89,11 @@ export function getDateFromFirstdayParam(firstDayParam) {
  * @returns {string}
  */
 export function getYYYYMMDDFromFirstdayParam(firstDayParam) {
-	if (firstDayParam === 'now') {
-		return getYYYYMMDDFromDate(dateFactory())
+	if (firstDayParam === "now") {
+		return getYYYYMMDDFromDate(dateFactory());
 	}
 
-	return firstDayParam
+	return firstDayParam;
 }
 
 /**
@@ -109,7 +112,7 @@ export function getDateFromDateTimeValue(dateTimeValue) {
 		dateTimeValue.minute,
 		0,
 		0
-	)
+	);
 }
 
 /**
@@ -123,10 +126,24 @@ export function getDateFromDateTimeValue(dateTimeValue) {
  * @returns {Date}
  */
 export function modifyDate(date, { day = 0, week = 0, month = 0 }) {
-	date = new Date(date.getTime())
-	date.setDate(date.getDate() + day)
-	date.setDate(date.getDate() + week * 7)
-	date.setMonth(date.getMonth() + month)
+	date = new Date(date.getTime());
+	date.setDate(date.getDate() + day);
+	date.setDate(date.getDate() + week * 7);
+	date.setMonth(date.getMonth() + month);
 
-	return date
+	return date;
+}
+
+export function formatDate(date, dateBefore) {
+	const m = new Date(date);
+	const previous = new Date(m.getTime());
+	previous.setDate(date.getDate() - dateBefore);
+
+	return (
+		previous.getFullYear() +
+		"/" +
+		(previous.getMonth() + 1) +
+		"/" +
+		previous.getDate()
+	);
 }

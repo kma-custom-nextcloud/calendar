@@ -22,41 +22,35 @@
 
 <template>
 	<div>
-		<button
-			v-if="showMoreButton"
-			@click="showMore">
-			{{ $t('calendar', 'More') }}
+		<button v-if="showMoreButton" @click="showMore">
+			{{ $t("calendar", "More") }}
 		</button>
-		<button
-			v-if="showSaveButton"
-			class="primary"
-			@click="saveThisOnly">
-			{{ $t('calendar', 'Save') }}
+		<button v-if="showSaveButton" class="primary" @click="saveThisOnly">
+			{{ $t("calendar", "Save") }}
 		</button>
-		<button
-			v-if="shoUpdateButton"
-			class="primary"
-			@click="saveThisOnly">
-			{{ $t('calendar', 'Update') }}
+		<button v-if="shoUpdateButton" class="primary" @click="saveThisOnly">
+			{{ $t("calendar", "Update") }}
 		</button>
 		<button
 			v-if="showUpdateOnlyThisButton"
 			class="primary"
-			@click="saveThisOnly">
-			{{ $t('calendar', 'Update this occurrence') }}
+			@click="saveThisOnly"
+		>
+			{{ $t("calendar", "Update this occurrence") }}
 		</button>
 		<button
 			v-if="showUpdateThisAndFutureButton"
-			:class="{ primary: forceThisAndAllFuture}"
-			@click="saveThisAndAllFuture">
-			{{ $t('calendar', 'Update this and all future') }}
+			:class="{ primary: forceThisAndAllFuture }"
+			@click="saveThisAndAllFuture"
+		>
+			{{ $t("calendar", "Update this and all future") }}
 		</button>
 	</div>
 </template>
 
 <script>
 export default {
-	name: 'SaveButtons',
+	name: "SaveButtons",
 	props: {
 		canCreateRecurrenceException: {
 			type: Boolean,
@@ -77,28 +71,28 @@ export default {
 	},
 	computed: {
 		showSaveButton() {
-			return this.isNew && !this.canCreateRecurrenceException
+			return this.isNew && !this.canCreateRecurrenceException;
 		},
 		shoUpdateButton() {
-			return !this.isNew && !this.canCreateRecurrenceException
+			return !this.isNew && !this.canCreateRecurrenceException;
 		},
 		showUpdateOnlyThisButton() {
-			return this.canCreateRecurrenceException && !this.forceThisAndAllFuture
+			return this.canCreateRecurrenceException && !this.forceThisAndAllFuture;
 		},
 		showUpdateThisAndFutureButton() {
-			return this.canCreateRecurrenceException
+			return this.canCreateRecurrenceException;
 		},
 	},
 	methods: {
 		saveThisOnly() {
-			this.$emit('saveThisOnly')
+			this.$emit("saveThisOnly");
 		},
 		saveThisAndAllFuture() {
-			this.$emit('saveThisAndAllFuture')
+			this.$emit("saveThisAndAllFuture");
 		},
 		showMore() {
-			this.$emit('showMore')
+			this.$emit("showMore");
 		},
 	},
-}
+};
 </script>

@@ -21,44 +21,51 @@
 	-->
 
 <template>
-	<DashboardWidget
-		id="calendar_panel"
-		:items="items"
-		:loading="loading">
+	<DashboardWidget id="calendar_panel" :items="items" :loading="loading">
 		<template #default="{ item }">
-			<EmptyContent v-if="item.isEmptyItem"
+			<EmptyContent
+				v-if="item.isEmptyItem"
 				id="calendar-widget-empty-content"
 				class="half-screen"
-				icon="icon-checkmark">
+				icon="icon-checkmark"
+			>
 				<template #desc>
-					{{ t('calendar', 'No more events today') }}
+					{{ t("calendar", "No more events today") }}
 				</template>
 			</EmptyContent>
-			<DashboardWidgetItem v-else
+			<DashboardWidgetItem
+				v-else
 				:main-text="item.mainText"
 				:sub-text="item.subText"
-				:target-url="item.targetUrl">
+				:target-url="item.targetUrl"
+			>
 				<template #avatar>
 					<div
 						v-if="item.componentName === 'VEVENT'"
 						class="calendar-dot"
-						:style="{'background-color': item.calendarColor}"
-						:title="item.calendarDisplayName" />
-					<div v-else
+						:style="{ 'background-color': item.calendarColor }"
+						:title="item.calendarDisplayName"
+					/>
+					<div
+						v-else
 						class="vtodo-checkbox"
-						:style="{'color': item.calendarColor}"
-						:title="item.calendarDisplayName" />
+						:style="{ color: item.calendarColor }"
+						:title="item.calendarDisplayName"
+					/>
 				</template>
 			</DashboardWidgetItem>
 		</template>
 		<template #empty-content>
 			<EmptyContent
 				id="calendar-widget-empty-content"
-				icon="icon-calendar-dark">
+				icon="icon-calendar-dark"
+			>
 				<template #desc>
-					{{ t('calendar', 'No upcoming events') }}
+					{{ t("calendar", "No upcoming events") }}
 					<div class="empty-label">
-						<a class="button" :href="clickStartNew"> {{ t('calendar', 'Create a new event') }} </a>
+						<a class="button" :href="clickStartNew">
+							{{ t("calendar", "Create a new event") }}
+						</a>
 					</div>
 				</template>
 			</EmptyContent>
@@ -67,33 +74,34 @@
 </template>
 
 <script>
-import { DashboardWidget, DashboardWidgetItem } from '@nextcloud/vue-dashboard'
-import EmptyContent from '@nextcloud/vue/dist/Components/EmptyContent'
-import { loadState } from '@nextcloud/initial-state'
-import moment from '@nextcloud/moment'
-import { imagePath, generateUrl } from '@nextcloud/router'
-import { initializeClientForUserView } from '../services/caldavService'
-import { dateFactory } from '../utils/date'
-import pLimit from 'p-limit'
-import { eventSourceFunction } from '../fullcalendar/eventSources/eventSourceFunction'
-import getTimezoneManager from '../services/timezoneDataProviderService'
-import loadMomentLocalization from '../utils/moment.js'
+import { DashboardWidget, DashboardWidgetItem } from "@nextcloud/vue-dashboard";
+import EmptyContent from "@nextcloud/vue/dist/Components/EmptyContent";
+import { loadState } from "@nextcloud/initial-state";
+import moment from "@nextcloud/moment";
+import { imagePath, generateUrl } from "@nextcloud/router";
+import { initializeClientForUserView } from "../services/caldavService";
+import { dateFactory } from "../utils/date";
+import pLimit from "p-limit";
+import { eventSourceFunction } from "../fullcalendar/eventSources/eventSourceFunction";
+import getTimezoneManager from "../services/timezoneDataProviderService";
+import loadMomentLocalization from "../utils/moment.js";
+import AWS from "../aws";
 
 export default {
-	name: 'Dashboard',
+	name: "Dashboard",
 	components: {
-	  DashboardWidget,
+		DashboardWidget,
 		DashboardWidgetItem,
 		EmptyContent,
 	},
 	data() {
 		return {
 			events: null,
-			locale: 'en',
-			imagePath: imagePath('calendar', 'illustrations/calendar'),
+			locale: "en",
+			imagePath: imagePath("calendar", "illustrations/calendar"),
 			loading: true,
 			now: dateFactory(),
-		}
+		};
 	},
 	computed: {
 		/**
@@ -103,45 +111,47 @@ export default {
 		 */
 		items() {
 			if (!Array.isArray(this.events) || this.events.length === 0) {
-				return []
+				return [];
 			}
 
-			const firstEvent = this.events[0]
-			const endOfToday = moment(this.now).endOf('day')
+			const firstEvent = this.events[0];
+			const endOfToday = moment(this.now).endOf("day");
 			if (endOfToday.isBefore(firstEvent.startDate)) {
-				return [{
-					isEmptyItem: true,
-				}].concat(this.events.slice(0, 4))
+				return [
+					{
+						isEmptyItem: true,
+					},
+				].concat(this.events.slice(0, 4));
 			}
 
-			return this.events
+			return this.events;
 		},
 		/**
 		 * Redirects to the new event route
 		 * @returns {String}
 		 */
 		clickStartNew() {
-			return generateUrl('apps/calendar') + '/new'
+			return generateUrl("apps/calendar") + "/new";
 		},
 	},
 	mounted() {
-		this.initialize()
+		this.initialize();
 	},
 	methods: {
 		/**
 		 * Initialize the widget
 		 */
 		async initialize() {
-			const start = dateFactory()
-			const end = dateFactory()
-			end.setDate(end.getDate() + 14)
+			const start = dateFactory();
+			const end = dateFactory();
+			end.setDate(end.getDate() + 14);
 
-			const startOfToday = moment(start).startOf('day').toDate()
+			const startOfToday = moment(start).startOf("day").toDate();
 
-			await this.initializeEnvironment()
-			const expandedEvents = await this.fetchExpandedEvents(start, end)
-			this.events = await this.formatEvents(expandedEvents, startOfToday)
-			this.loading = false
+			await this.initializeEnvironment();
+			const expandedEvents = await this.fetchExpandedEvents(start, end);
+			this.events = await this.formatEvents(expandedEvents, startOfToday);
+			this.loading = false;
 		},
 		/**
 		 * Initialize everything necessary,
@@ -150,23 +160,23 @@ export default {
 		 * @returns {Promise<void>}
 		 */
 		async initializeEnvironment() {
-			await initializeClientForUserView()
-			await this.$store.dispatch('fetchCurrentUserPrincipal')
-			await this.$store.dispatch('loadCollections')
+			await initializeClientForUserView();
+			await this.$store.dispatch("fetchCurrentUserPrincipal");
+			await this.$store.dispatch("loadCollections");
 
-			const {
-				show_tasks: showTasks,
-				timezone,
-			} = loadState('calendar', 'dashboard_data')
-			const locale = await loadMomentLocalization()
+			const { show_tasks: showTasks, timezone } = loadState(
+				"calendar",
+				"dashboard_data"
+			);
+			const locale = await loadMomentLocalization();
 
-			this.$store.commit('loadSettingsFromServer', {
+			this.$store.commit("loadSettingsFromServer", {
 				timezone,
 				showTasks,
-			})
-			this.$store.commit('setMomentLocale', {
+			});
+			this.$store.commit("setMomentLocale", {
 				locale,
-			})
+			});
 		},
 		/**
 		 * Fetch events
@@ -177,34 +187,47 @@ export default {
 		 * @returns {Promise<Object[]>}
 		 */
 		async fetchExpandedEvents(from, to) {
-			const timeZone = this.$store.getters.getResolvedTimezone
-			let timezoneObject = getTimezoneManager().getTimezoneForId(timeZone)
+			const timeZone = this.$store.getters.getResolvedTimezone;
+			let timezoneObject = getTimezoneManager().getTimezoneForId(timeZone);
 			if (!timezoneObject) {
-				timezoneObject = getTimezoneManager().getTimezoneForId('UTC')
+				timezoneObject = getTimezoneManager().getTimezoneForId("UTC");
 			}
 
-			const limit = pLimit(10)
-			const fetchEventPromises = []
+			const limit = pLimit(10);
+			const fetchEventPromises = [];
 			for (const calendar of this.$store.getters.enabledCalendars) {
-				fetchEventPromises.push(limit(async() => {
-					let timeRangeId
-					try {
-						timeRangeId = await this.$store.dispatch('getEventsFromCalendarInTimeRange', {
+				fetchEventPromises.push(
+					limit(async () => {
+						let timeRangeId;
+						try {
+							timeRangeId = await this.$store.dispatch(
+								"getEventsFromCalendarInTimeRange",
+								{
+									calendar,
+									from,
+									to,
+								}
+							);
+						} catch (e) {
+							return [];
+						}
+
+						const calendarObjects = this.$store.getters.getCalendarObjectsByTimeRangeId(
+							timeRangeId
+						);
+						return eventSourceFunction(
+							calendarObjects,
 							calendar,
 							from,
 							to,
-						})
-					} catch (e) {
-						return []
-					}
-
-					const calendarObjects = this.$store.getters.getCalendarObjectsByTimeRangeId(timeRangeId)
-					return eventSourceFunction(calendarObjects, calendar, from, to, timezoneObject)
-				}))
+							timezoneObject
+						);
+					})
+				);
 			}
 
-			const expandedEvents = await Promise.all(fetchEventPromises)
-			return expandedEvents.flat()
+			const expandedEvents = await Promise.all(fetchEventPromises);
+			return expandedEvents.flat();
 		},
 		/**
 		 * @param {Object[]} expandedEvents Array of fullcalendar events
@@ -214,47 +237,66 @@ export default {
 		formatEvents(expandedEvents, filterBefore) {
 			return expandedEvents
 				.sort((a, b) => a.start.getTime() - b.start.getTime())
-				.filter(event => !event.classNames.includes('fc-event-nc-task-completed'))
-				.filter(event => !event.classNames.includes('fc-event-nc-cancelled'))
-				.filter(event => filterBefore.getTime() <= event.start.getTime())
+				.filter(
+					(event) => !event.classNames.includes("fc-event-nc-task-completed")
+				)
+				.filter((event) => !event.classNames.includes("fc-event-nc-cancelled"))
+				.filter((event) => filterBefore.getTime() <= event.start.getTime())
 				.slice(0, 7)
 				.map((event) => ({
 					isEmptyItem: false,
 					componentName: event.extendedProps.objectType,
-					targetUrl: event.extendedProps.objectType === 'VEVENT'
-						? this.getCalendarAppUrl(event)
-						: this.getTasksAppUrl(event),
+					targetUrl:
+						event.extendedProps.objectType === "VEVENT"
+							? this.getCalendarAppUrl(event)
+							: this.getTasksAppUrl(event),
 					subText: this.formatSubtext(event),
 					mainText: event.title,
 					startDate: event.start,
-					calendarColor: this.$store.state.calendars.calendarsById[event.extendedProps.calendarId].color,
-					calendarDisplayName: this.$store.state.calendars.calendarsById[event.extendedProps.calendarId].displayname,
-				}))
+					calendarColor: this.$store.state.calendars.calendarsById[
+						event.extendedProps.calendarId
+					].color,
+					calendarDisplayName: this.$store.state.calendars.calendarsById[
+						event.extendedProps.calendarId
+					].displayname,
+				}));
 		},
 		/**
 		 * @param {Object} event The full-calendar formatted event
 		 * @returns {String}
 		 */
 		formatSubtext(event) {
-			const locale = this.$store.state.settings.momentLocale
+			const locale = this.$store.state.settings.momentLocale;
 
 			if (event.allDay) {
-				return moment(event.start).locale(locale).calendar(null, {
-					// TRANSLATORS Please translate only the text in brackets and keep the brackets!
-					sameDay: t('calendar', '[Today]'),
-					// TRANSLATORS Please translate only the text in brackets and keep the brackets!
-					nextDay: t('calendar', '[Tomorrow]'),
-					nextWeek: 'dddd',
-					// TRANSLATORS Please translate only the text in brackets and keep the brackets!
-					lastDay: t('calendar', '[Yesterday]'),
-					// TRANSLATORS Please translate only the text in brackets and keep the brackets!
-					lastWeek: t('calendar', '[Last] dddd'),
-					sameElse: () => '[replace-from-now]',
-				}).replace('replace-from-now', moment(event.start).locale(locale).fromNow())
+				return moment(event.start)
+					.locale(locale)
+					.calendar(null, {
+						// TRANSLATORS Please translate only the text in brackets and keep the brackets!
+						sameDay: t("calendar", "[Today]"),
+						// TRANSLATORS Please translate only the text in brackets and keep the brackets!
+						nextDay: t("calendar", "[Tomorrow]"),
+						nextWeek: "dddd",
+						// TRANSLATORS Please translate only the text in brackets and keep the brackets!
+						lastDay: t("calendar", "[Yesterday]"),
+						// TRANSLATORS Please translate only the text in brackets and keep the brackets!
+						lastWeek: t("calendar", "[Last] dddd"),
+						sameElse: () => "[replace-from-now]",
+					})
+					.replace(
+						"replace-from-now",
+						moment(event.start).locale(locale).fromNow()
+					);
 			} else {
-				return moment(event.start).locale(locale).calendar(null, {
-					sameElse: () => '[replace-from-now]',
-				}).replace('replace-from-now', moment(event.start).locale(locale).fromNow())
+				return moment(event.start)
+					.locale(locale)
+					.calendar(null, {
+						sameElse: () => "[replace-from-now]",
+					})
+					.replace(
+						"replace-from-now",
+						moment(event.start).locale(locale).fromNow()
+					);
 			}
 		},
 		/**
@@ -263,7 +305,13 @@ export default {
 		 * @returns {string}
 		 */
 		getCalendarAppUrl({ extendedProps }) {
-			return generateUrl('apps/calendar') + '/edit/' + extendedProps.objectId + '/' + extendedProps.recurrenceId
+			return (
+				generateUrl("apps/calendar") +
+				"/edit/" +
+				extendedProps.objectId +
+				"/" +
+				extendedProps.recurrenceId
+			);
 		},
 		/**
 		 * @param {Object} data The data destructuring object
@@ -271,23 +319,25 @@ export default {
 		 * @returns {string}
 		 */
 		getTasksAppUrl({ extendedProps }) {
-			const davUrlParts = extendedProps.davUrl.split('/')
-			const taskId = davUrlParts.pop()
-			const calendarId = davUrlParts.pop()
-			return generateUrl('apps/tasks') + `/#/calendars/${calendarId}/tasks/${taskId}`
+			const davUrlParts = extendedProps.davUrl.split("/");
+			const taskId = davUrlParts.pop();
+			const calendarId = davUrlParts.pop();
+			return (
+				generateUrl("apps/tasks") + `/#/calendars/${calendarId}/tasks/${taskId}`
+			);
 		},
 	},
-}
+};
 </script>
 
 <style lang="scss">
-@import '../fonts/scss/iconfont-calendar-app';
+@import "../fonts/scss/iconfont-calendar-app";
 
 #calendar_panel {
 	.vtodo-checkbox {
 		flex-shrink: 0;
 		border-color: transparent;
-		@include iconfont('checkbox');
+		@include iconfont("checkbox");
 	}
 
 	.calendar-dot {
