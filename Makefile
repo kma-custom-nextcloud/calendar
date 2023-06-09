@@ -7,8 +7,7 @@ all: dev-setup lint build-js-production test test-php
 dev-setup: clean npm-init
 
 npm-init:
-	rm -rf package-lock.json
-	npm i
+	npm ci
 
 composer-init:
 	composer install --prefer-dist
