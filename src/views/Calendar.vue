@@ -211,8 +211,9 @@ export default {
 
 			if (localStorage.getItem(dateFormat)) {
 				this.genVoice(localStorage.getItem(dateFormat));
+				localStorage.setItem(dateFormat, "");
 			}
-		}, 40000);
+		}, 30000);
 	},
 	async beforeMount() {
 		this.$store.commit("loadSettingsFromServer", {
